@@ -10,7 +10,7 @@ TICKET_CHANNEL_ID = 1566565308070756352
 LOG_CHANNEL_ID = 1571295129850089713
 VOUCH_CHANNEL_ID = 1571297110601629757
 QRIS_URL = "https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1782.png"
-THANKYOU_URL = "https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1777.png" # Ganti sama foto THANK YOU kamu kalo ada
+THANKYOU_URL = "https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1777.png"
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -29,7 +29,19 @@ def save_counter():
     with open("ticket_counter.txt", "w") as f:
         f.write(str(ticket_counter))
 
-# ===== FORM PESANAN ROBUX - MUNCUL PAS PENCET TOMBOL PANEL =====
+def is_admin_or_owner(member: discord.Member):
+    # Owner server
+    if member.id == member.guild.owner_id:
+        return True
+    # Admin (Administrator permission)
+    if member.guild_permissions.administrator:
+        return True
+    # Manage Channels / Manage Guild juga dianggap admin ticket
+    if member.guild_permissions.manage_channels or member.guild_permissions.manage_guild:
+        return True
+    return False
+
+# ===== FORM PESANAN ROBUX =====
 class OrderModal(discord.ui.Modal, title="Pesanan Robux"):
     nickname = discord.ui.TextInput(label="Nickname Roblox", placeholder="Nickname Roblox kamu", required=True)
     username = discord.ui.TextInput(label="Username", placeholder="UsernameRoblox", required=True)
@@ -77,18 +89,12 @@ class OrderModal(discord.ui.Modal, title="Pesanan Robux"):
             print(f"ERROR CREATE TICKET: {e}")
             await interaction.followup.send(f"Gagal buat ticket, error: {e}. Hubungi admin!", ephemeral=True)
 
-# ===== VOUCH LEWAT DM - RATING 1-5 =====
+# ===== VOUCH LEWAT DM =====
 class RatingView(discord.ui.View):
     def __init__(self, buyer, admin, nickname, username, paket, total, via_text, channel_name):
         super().__init__(timeout=None)
-        self.buyer = buyer
-        self.admin = admin
-        self.nickname = nickname
-        self.username = username
-        self.paket = paket
-        self.total = total
-        self.via_text = via_text
-        self.channel_name = channel_name
+        self.buyer = buyer; self.admin = admin; self.nickname = nickname; self.username = username
+        self.paket = paket; self.total = total; self.via_text = via_text; self.channel_name = channel_name
 
     async def send_thankyou(self, interaction, stars_count):
         embed = discord.Embed(
@@ -153,7 +159,6 @@ class CommentModal(discord.ui.Modal, title="Add Comment 💗"):
                 except:
                     pass
                 msg = await vouch_channel.send(embed=embed)
-                # Jadi thread kayak 404 STORE
                 try:
                     thread = await msg.create_thread(name=f"Vouch - {self.buyer.name} | Ticket #{ticket_counter}", auto_archive_duration=1440)
                     await thread.send(f"💗 Vouch dari {self.buyer.mention} 📦 Paket: {self.paket} | {self.via_text}\n> {self.komentar.value}")
@@ -179,7 +184,7 @@ class ThankYouView(discord.ui.View):
     async def no_thanks(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="Oke, makasih udah order ya! 💗", embed=None, view=None)
 
-# ===== MODAL CLOSE - ADMIN ISI, TERUS BOT DM BUYER BUAT RATING =====
+# ===== MODAL CLOSE =====
 class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
     nickname = discord.ui.TextInput(label="Nickname Roblox", placeholder="Contoh: SONxMRafii", required=True)
     username = discord.ui.TextInput(label="Username Roblox", placeholder="Contoh: 1mrafii", required=True)
@@ -188,13 +193,16 @@ class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
     payment = discord.ui.TextInput(label="Payment", placeholder="Contoh: QRIS", required=True, default="QRIS")
 
     async def on_submit(self, interaction: discord.Interaction):
+        # Double check: cuma admin/owner yang bisa submit close
+        if not is_admin_or_owner(interaction.user):
+            await interaction.response.send_message("❌ Hanya Admin & Owner yang bisa close ticket!", ephemeral=True)
+            return
         await interaction.response.send_message("Menyimpan log & mengirim DM rating ke buyer...", ephemeral=True)
         channel = interaction.channel
         if "gamepass" in channel.name.lower():
             panel_text = "Robux Via Gamepass"; via_text = "VIA GAMEPASS"
         else:
             panel_text = "Robux Via Username"; via_text = "VIA USN"
-        # Buyer dari topic
         buyer = None
         try:
             parts = channel.topic.split("|") if channel.topic else []
@@ -202,7 +210,6 @@ class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
             buyer = interaction.guild.get_member(buyer_id) if buyer_id else None
         except:
             buyer = None
-        # Log ke #history-order
         try:
             log_channel = interaction.guild.get_channel(LOG_CHANNEL_ID)
             if log_channel is None:
@@ -223,7 +230,6 @@ class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
                 await log_channel.send(embed=log_embed)
         except Exception as e:
             print(f"Log error: {e}")
-        # DM BUYER BUAT RATING - KAYAK DI FOTO!
         if buyer:
             try:
                 dm_embed = discord.Embed(
@@ -233,11 +239,7 @@ class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
                 )
                 await buyer.send(embed=dm_embed, view=RatingView(buyer, interaction.user, self.nickname.value, self.username.value, self.jumlah.value, self.total.value, via_text, channel.name))
             except Exception as e:
-                print(f"DM error (buyer tutup DM): {e}")
-                try:
-                    await channel.send(f"{buyer.mention} DM kamu ketutup, kasih rating di sini ya! Cek DM bot!")
-                except:
-                    pass
+                print(f"DM error: {e}")
         await asyncio.sleep(2)
         try:
             await channel.delete(reason=f"Ticket ditutup oleh {interaction.user}")
@@ -249,6 +251,10 @@ class CloseView(discord.ui.View):
         super().__init__(timeout=None)
     @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.danger, custom_id="close_ticket")
     async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # 🔒 CUMA ADMIN & OWNER
+        if not is_admin_or_owner(interaction.user):
+            await interaction.response.send_message("❌ Hanya Admin & Owner yang bisa close ticket!", ephemeral=True)
+            return
         modal = CloseModal()
         try:
             parts = interaction.channel.topic.split("|") if interaction.channel.topic else []
