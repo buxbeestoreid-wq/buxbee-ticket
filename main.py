@@ -73,7 +73,7 @@ class TicketView(discord.ui.View):
                     description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\nSilahkan ketik pesanan kamu disini. Admin akan segera membalas.\n\n**Jenis:** {label}",
                     color=0xFFD700
                 )
-
+            embed.set_footer(text="Project by Mipi Store")
             await channel.send(content=f"{interaction.user.mention}", embed=embed, view=CloseView())
             await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
 
@@ -112,6 +112,7 @@ async def setup_ticket(interaction: discord.Interaction):
         color=0xFFD700
     )
     embed.set_image(url="https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1777.png")
+    embed.set_footer(text="Project by Mipi Store")
     await interaction.response.send_message(embed=embed, view=TicketView())
     print("Setup ticket sent!")
 
