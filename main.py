@@ -17,7 +17,6 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
 
     async def create_ticket(self, interaction: discord.Interaction, label: str):
-        # Biar gak timeout
         await interaction.response.defer(ephemeral=True, thinking=True)
         try:
             guild = interaction.guild
@@ -54,9 +53,9 @@ class TicketView(discord.ui.View):
     async def gamepass_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "ROBUX GAMEPASS")
 
-    @discord.ui.button(label="ROBUX VIA SEND", style=discord.ButtonStyle.primary, custom_id="ticket_viasend", emoji="🎫")
-    async def viasend_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.create_ticket(interaction, "ROBUX VIA SEND")
+    @discord.ui.button(label="ROBUX VIA USE", style=discord.ButtonStyle.primary, custom_id="ticket_viause", emoji="🎫")
+    async def viause_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, "ROBUX VIA USE")
 
 @bot.event
 async def on_ready():
@@ -79,8 +78,8 @@ async def setup_ticket(interaction: discord.Interaction):
         description="Selamat datang di layanan pemesanan Buxbee Store 🐝! Gunakan fitur ini untuk melakukan pemesanan atau bertanya seputar produk kami.\n\n**📋 CARA MEMBUKA TICKET**\n1. Klik tombol di bawah ini.\n2. Channel privat baru akan muncul untuk kamu.",
         color=0xFFD700
     )
+    embed.set_image(url="https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1777.png")
     await interaction.response.send_message(embed=embed, view=TicketView())
-    # Kirim ulang biar view nya nempel terus
     print("Setup ticket sent!")
 
 bot.run(os.getenv("DISCORD_TOKEN"))
