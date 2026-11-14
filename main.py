@@ -6,6 +6,7 @@ import asyncio
 GUILD_ID = 1543725449438564414
 CATEGORY_ID = 1566564296882913320
 TICKET_CHANNEL_ID = 1566565308070756352
+LOG_CHANNEL_ID = 1571295129850089713
 QRIS_URL = "https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1782.png"
 
 intents = discord.Intents.default()
@@ -14,19 +15,64 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ===== MODAL PAS CLOSE - ISI DATA ORDER =====
+class CloseModal(discord.ui.Modal, title="Close Ticket - Isi Data Order"):
+    nickname = discord.ui.TextInput(label="Nickname Roblox", placeholder="Contoh: SONxMRafii", required=True)
+    username = discord.ui.TextInput(label="Username Roblox", placeholder="Contoh: 1mrafii", required=True)
+    jumlah = discord.ui.TextInput(label="Jumlah Robux", placeholder="Contoh: 500", required=True)
+    total = discord.ui.TextInput(label="Total Harga", placeholder="Contoh: Rp 78.000", required=True)
+    payment = discord.ui.TextInput(label="Payment", placeholder="Contoh: QRIS / DANA / GOPAY", required=True, default="QRIS")
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message("Menyimpan log & menutup ticket dalam 3 detik...", ephemeral=True)
+        channel = interaction.channel
+        # Bedain Via Gamepass / Via USN dari nama channel
+        if "gamepass" in channel.name.lower():
+            panel_text = "Robux Via Gamepass"
+            via_text = "VIA GAMEPASS"
+        else:
+            panel_text = "Robux Via Username"
+            via_text = "VIA USN"
+
+        # Kirim Log ke #history-order
+        try:
+            log_channel = interaction.guild.get_channel(LOG_CHANNEL_ID)
+            if log_channel is None:
+                log_channel = await interaction.guild.fetch_channel(LOG_CHANNEL_ID)
+            
+            if log_channel:
+                log_embed = discord.Embed(title="🔒 Ticket Log", color=0xFFD700)
+                log_embed.add_field(name="🎫 Ticket", value=channel.name, inline=False)
+                log_embed.add_field(name="🔒 Action", value="Closed", inline=False)
+                log_embed.add_field(name="⚡ Panel", value=panel_text, inline=False)
+                log_embed.add_field(name="🎀 Member", value=interaction.user.mention, inline=False)
+                log_embed.add_field(name="✨ Nickname Roblox", value=self.nickname.value, inline=False)
+                log_embed.add_field(name="👤 Username Roblox", value=self.username.value, inline=False)
+                log_embed.add_field(name="✨ Jumlah Robux", value=self.jumlah.value, inline=False)
+                log_embed.add_field(name="💰 Total Harga", value=self.total.value, inline=False)
+                log_embed.add_field(name="🧾 Payment", value=self.payment.value, inline=False)
+                log_embed.add_field(name="✅ Admin", value=interaction.user.mention, inline=False)
+                log_embed.set_footer(text=f"{via_text} | Project by Mipi Store")
+                await log_channel.send(embed=log_embed)
+        except Exception as e:
+            print(f"Log error: {e}")
+
+        await asyncio.sleep(3)
+        try:
+            await channel.delete(reason=f"Ticket ditutup oleh {interaction.user}")
+        except Exception as e:
+            print(f"Close error: {e}")
+
+# ===== TOMBOL CLOSE =====
 class CloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.danger, custom_id="close_ticket")
     async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Ticket akan ditutup dalam 3 detik...", ephemeral=False)
-        await asyncio.sleep(3)
-        try:
-            await interaction.channel.delete(reason=f"Ticket ditutup oleh {interaction.user}")
-        except Exception as e:
-            print(f"Close error: {e}")
+        await interaction.response.send_modal(CloseModal())
 
+# ===== TOMBOL PANEL =====
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -70,9 +116,8 @@ class TicketView(discord.ui.View):
                     description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\nSilahkan ketik pesanan kamu disini. Admin akan segera membalas.\n\n**Jenis:** {label}",
                     color=0xFFD700
                 )
-            # FOTO QR DI DALAM TIKET
             embed.set_image(url=QRIS_URL)
-            embed.set_footer(text="Project by Mipi Store")
+            embed.set_footer(text=f"{label} | Project by Mipi Store")
             await channel.send(content=f"{interaction.user.mention}", embed=embed, view=CloseView())
             await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
 
