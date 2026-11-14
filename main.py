@@ -2,123 +2,85 @@ import discord
 from discord.ext import commands
 import os
 
-TOKEN = os.getenv("DISCORD_TOKEN")
-intents = discord.Intents.all()
+GUILD_ID = 1543725449438564414
+CATEGORY_ID = 1566564296882913320
+TICKET_CHANNEL_ID = 1566565308070756352
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-TICKET_CATEGORY_ID = 123456789012345678
-ADMIN_ROLE_ID = 123456789012345678
-
-# === PRICELIST VIA SEND ===
-PRICELIST_SEND = """# PRICELIST ROBUX VIA SEND USERNAME
-_Buxbeestore.id🐝_
-
-**KELIPATAN 10 RBX (ECERAN) PROSES FAST SATSET:**
-10 rbx ➔ Rp 3.000
-20 rbx ➔ Rp 5.500
-30 rbx ➔ Rp 7.500
-40 rbx ➔ Rp 9.500
-50 rbx ➔ Rp 11.000
-
-**KELIPATAN 100 RBX PROSES FAST SATSET:**
-100 rbx ➔ Rp 15.500
-200 rbx ➔ Rp 31.000
-300 rbx ➔ Rp 46.500
-400 rbx ➔ Rp 62.000
-500 rbx ➔ Rp 75.000
-600 rbx ➔ Rp 90.500
-700 rbx ➔ Rp 106.000
-800 rbx ➔ Rp 121.500
-900 rbx ➔ Rp 137.000
-1.000 rbx ➔ Rp 150.000
-
-𓈃 Notes:
-⚠️ sebelum beli pastikan akun penerima robux tidak limit!
-⚠️ wajib sudah verif usia 18+
-⚠️ wajib sudah verifikasi 2 langkah
-⚠️ jangan langsung payment (tunggu ditotalin dulu, baru boleh payment)
-⚠️ setelah payment wajib ss bukti transfer yang jelas agar bisa diproses
-**⚠️ BUKAN ROBLOX KIDS / SELECT**
-**⌛️ HARGA JUGA DAPAT BERUBAH-UBAH, TIDAK MENENTU.**
-"""
-
-# === PRICELIST GAMEPASS - ASLI ===
-PRICELIST_GAMEPASS = """# PRICELIST ROBUX VIA GAMEPASS 🔥
-
-⏳ Pending 5 Hari
-✅ Sudah After Tax
-⚡ Semi fast proses (max 1x24 jam)
-
- * 100 rbx → Rp 13.500
- * 200 rbx → Rp 27.000
- * 300 rbx → Rp 41.000
- * 400 rbx → Rp 55.000
- * 500 rbx → Rp 70.000
- * 600 rbx → Rp 75.000
- * 700 rbx → Rp 95.000
- * 800 rbx → Rp 110.000
- * 900 rbx → Rp 115.000
- * 1000 rbx → Rp 140.000
-
-nominal lain:
-140 × jumlah robux yg di inginkan
-contoh : 140 × 2000 rbx = 280.000
-
-⚠️ note :
-**TIDAK PERLU BUAT KODE GAMEPASS (HANYA PENGIRIMANNYA SAJA YANG SEDIKIT MEMAKAN WAKTU)**
-"""
-
-class CloseButton(discord.ui.View):
+class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.red, custom_id="close_ticket")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Ticket ditutup...", ephemeral=True)
-        await interaction.channel.delete()
 
-async def buat_ticket(interaction, tipe, pricelist):
-    guild = interaction.guild
-    user = interaction.user
-    for channel in guild.channels:
-        if channel.name == f"ticket-{user.name.lower()}":
-            await interaction.response.send_message(f"Kamu udah punya ticket! {channel.mention}", ephemeral=True)
-            return
-    overwrites = {
-        guild.default_role: discord.PermissionOverwrite(view_channel=False),
-        user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-        guild.get_role(ADMIN_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True),
-        guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
-    }
-    category = guild.get_channel(TICKET_CATEGORY_ID)
-    channel = await guild.create_text_channel(f"{tipe}-{user.name}", category=category, overwrites=overwrites)
-    embed = discord.Embed(title=f"🐝 BUXBEESTORE.ID - {tipe.upper()}", color=0xFFD700)
-    embed.description = f"Halo {user.mention}!\n\n{pricelist}\n\n**📝 FORMAT ORDER:**\n`Username Roblox : \nJumlah Robux : \nPayment : `"
-    embed.set_footer(text="BUXBEESTORE.ID • PEOPLE COME & GO")
-    await channel.send(embed=embed, view=CloseButton())
-    await interaction.response.send_message(f"Ticket kamu dibuat! {channel.mention}", ephemeral=True)
+    async def create_ticket(self, interaction: discord.Interaction, label: str):
+        # Biar gak timeout
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        try:
+            guild = interaction.guild
+            category = guild.get_channel(CATEGORY_ID)
+            if category is None:
+                category = await guild.fetch_channel(CATEGORY_ID)
 
-class TicketButton(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-    @discord.ui.button(label="🎫 ROBUX GAMEPASS", style=discord.ButtonStyle.blurple, custom_id="ticket_gamepass")
-    async def gamepass(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await buat_ticket(interaction, "gamepass", PRICELIST_GAMEPASS)
-    @discord.ui.button(label="🎫 ROBUX VIA SEND", style=discord.ButtonStyle.blurple, custom_id="ticket_send")
-    async def via_send(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await buat_ticket(interaction, "via-send", PRICELIST_SEND)
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True, embed_links=True),
+                guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, manage_channels=True)
+            }
+
+            channel = await guild.create_text_channel(
+                name=f"ticket-{interaction.user.name}-{label.lower().replace(' ', '-')}",
+                category=category,
+                overwrites=overwrites,
+                reason=f"Ticket {label} by {interaction.user}"
+            )
+
+            embed = discord.Embed(
+                title=f"Ticket - {label}",
+                description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\nSilahkan ketik pesanan kamu disini. Admin akan segera membalas.\n\n**Jenis:** {label}",
+                color=0xFFD700
+            )
+            await channel.send(content=f"{interaction.user.mention}", embed=embed)
+            await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
+
+        except Exception as e:
+            print(f"ERROR CREATE TICKET: {e}")
+            await interaction.followup.send(f"Gagal buat ticket, error: {e}. Hubungi admin!", ephemeral=True)
+
+    @discord.ui.button(label="ROBUX GAMEPASS", style=discord.ButtonStyle.primary, custom_id="ticket_gamepass", emoji="🎫")
+    async def gamepass_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, "ROBUX GAMEPASS")
+
+    @discord.ui.button(label="ROBUX VIA SEND", style=discord.ButtonStyle.primary, custom_id="ticket_viasend", emoji="🎫")
+    async def viasend_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, "ROBUX VIA SEND")
 
 @bot.event
 async def on_ready():
-    bot.add_view(TicketButton())
-    bot.add_view(CloseButton())
     print(f"Bot {bot.user} Online!")
-    try: await bot.tree.sync()
-    except Exception as e: print(e)
+    bot.add_view(TicketView())
+    try:
+        synced = await bot.tree.sync()
+        print(f"Synced {len(synced)} commands")
+    except Exception as e:
+        print(f"Sync error: {e}")
 
-@bot.tree.command(name="setup-ticket", description="Pasang panel ticket")
+@bot.tree.command(name="setup-ticket", description="Setup panel ticket Buxbee")
 async def setup_ticket(interaction: discord.Interaction):
-    embed = discord.Embed(title="Order Here!", description="Selamat datang di layanan pemesanan Buxbee Store🐝! Gunakan fitur ini untuk melakukan pemesanan atau bertanya seputar produk kami.\n\n📋 **CARA MEMBUKA TICKET**\n1. Klik tombol di bawah ini.\n2. Channel privat baru akan muncul untuk kamu.", color=0xFFD700)
-    await interaction.channel.send(embed=embed, view=TicketButton())
-    await interaction.response.send_message("Panel ticket berhasil dipasang!", ephemeral=True)
+    if interaction.channel_id != TICKET_CHANNEL_ID:
+        await interaction.response.send_message("Command ini hanya bisa di #open-ticket!", ephemeral=True)
+        return
 
-bot.run(TOKEN)
+    embed = discord.Embed(
+        title="Order Here!",
+        description="Selamat datang di layanan pemesanan Buxbee Store 🐝! Gunakan fitur ini untuk melakukan pemesanan atau bertanya seputar produk kami.\n\n**📋 CARA MEMBUKA TICKET**\n1. Klik tombol di bawah ini.\n2. Channel privat baru akan muncul untuk kamu.",
+        color=0xFFD700
+    )
+    await interaction.response.send_message(embed=embed, view=TicketView())
+    # Kirim ulang biar view nya nempel terus
+    print("Setup ticket sent!")
+
+bot.run(os.getenv("DISCORD_TOKEN"))
