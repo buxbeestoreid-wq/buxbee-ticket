@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import os
+import asyncio
 
 GUILD_ID = 1543725449438564414
 CATEGORY_ID = 1566564296882913320
@@ -12,6 +13,21 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ===== TOMBOL CLOSE =====
+class CloseView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.danger, custom_id="close_ticket")
+    async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Ticket akan ditutup dalam 3 detik...", ephemeral=False)
+        await asyncio.sleep(3)
+        try:
+            await interaction.channel.delete(reason=f"Ticket ditutup oleh {interaction.user}")
+        except Exception as e:
+            print(f"Close error: {e}")
+
+# ===== TOMBOL PANEL =====
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -37,12 +53,21 @@ class TicketView(discord.ui.View):
                 reason=f"Ticket {label} by {interaction.user}"
             )
 
-            embed = discord.Embed(
-                title=f"Ticket - {label}",
-                description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\nSilahkan ketik pesanan kamu disini. Admin akan segera membalas.\n\n**Jenis:** {label}",
-                color=0xFFD700
-            )
-            await channel.send(content=f"{interaction.user.mention}", embed=embed)
+            # --- EMBED GAMEPASS = PRICELIST ---
+            if label == "ROBUX GAMEPASS":
+                embed = discord.Embed(
+                    title="Ticket - ROBUX GAMEPASS",
+                    description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n# PRICELIST ROBUX VIA GAMEPASS 🔥\n\n⏳ Pending 5 Hari\n✅ Sudah After Tax\n⚡ Semi fast proses (max 1x24 jam)\n\n* 100 rbx → Rp 13.500\n* 200 rbx → Rp 27.000\n* 300 rbx → Rp 41.000\n* 400 rbx → Rp 55.000\n* 500 rbx → Rp 70.000\n* 600 rbx → Rp 75.000\n* 700 rbx → Rp 95.000\n* 800 rbx → Rp 110.000\n* 900 rbx → Rp 115.000\n* 1000 rbx → Rp 140.000\n\n**nominal lain:**\n140 × jumlah robux yg di inginkan\ncontoh : 140 × 2000 rbx = 280.000\n\n⚠️ note :\n**TIDAK PERLU BUAT KODE GAMEPASS (HANYA PENGIRIMANNYA SAJA YANG SEDIKIT MEMAKAN WAKTU)**\n\nSilahkan ketik nominal yang mau kamu order ya!",
+                    color=0xFFD700
+                )
+            else:
+                embed = discord.Embed(
+                    title=f"Ticket - {label}",
+                    description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\nSilahkan ketik pesanan kamu disini. Admin akan segera membalas.\n\n**Jenis:** {label}",
+                    color=0xFFD700
+                )
+
+            await channel.send(content=f"{interaction.user.mention}", embed=embed, view=CloseView())
             await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
 
         except Exception as e:
@@ -61,6 +86,7 @@ class TicketView(discord.ui.View):
 async def on_ready():
     print(f"Bot {bot.user} Online!")
     bot.add_view(TicketView())
+    bot.add_view(CloseView())
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} commands")
