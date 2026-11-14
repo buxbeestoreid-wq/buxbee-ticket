@@ -53,9 +53,9 @@ class TicketView(discord.ui.View):
     async def gamepass_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "ROBUX GAMEPASS")
 
-    @discord.ui.button(label="ROBUX VIA USE", style=discord.ButtonStyle.primary, custom_id="ticket_viause", emoji="🎫")
-    async def viause_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.create_ticket(interaction, "ROBUX VIA USE")
+    @discord.ui.button(label="ROBUX VIA USN", style=discord.ButtonStyle.primary, custom_id="ticket_viausn", emoji="🎫")
+    async def viausn_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.create_ticket(interaction, "ROBUX VIA USN")
 
 @bot.event
 async def on_ready():
