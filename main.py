@@ -17,7 +17,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# Counter Ticket ID buat Vouch
 ticket_counter = 1
 try:
     with open("ticket_counter.txt", "r") as f:
@@ -28,6 +27,56 @@ except:
 def save_counter():
     with open("ticket_counter.txt", "w") as f:
         f.write(str(ticket_counter))
+
+# ===== FORM PESANAN ROBUX - MUNCUL PAS PENCET TOMBOL =====
+class OrderModal(discord.ui.Modal, title="Pesanan Robux"):
+    nickname = discord.ui.TextInput(label="Nickname Roblox", placeholder="Nickname Roblox kamu", required=True)
+    username = discord.ui.TextInput(label="Username", placeholder="UsernameRoblox", required=True)
+    paket = discord.ui.TextInput(label="Paket yang dipilih", placeholder="Contoh: 500 Robux", required=True)
+    payment = discord.ui.TextInput(label="Metode Pembayaran", placeholder="QRIS", required=True, default="QRIS")
+
+    def __init__(self, label: str):
+        super().__init__()
+        self.label = label
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+        label = self.label
+        try:
+            guild = interaction.guild
+            category = guild.get_channel(CATEGORY_ID)
+            if category is None:
+                category = await guild.fetch_channel(CATEGORY_ID)
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True, embed_links=True),
+                guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, manage_channels=True)
+            }
+            channel = await guild.create_text_channel(
+                name=f"ticket-{interaction.user.name}-{label.lower().replace(' ', '-')}",
+                category=category,
+                overwrites=overwrites,
+                topic=f"{interaction.user.id}|{self.nickname.value}|{self.username.value}|{self.paket.value}|{self.payment.value}",
+                reason=f"Ticket {label} by {interaction.user}"
+            )
+
+            if label == "ROBUX GAMEPASS":
+                pricelist = "# PRICELIST ROBUX VIA GAMEPASS 🔥\n\n⏳ Pending 5 Hari\n✅ Sudah After Tax\n⚡ Semi fast proses (max 1x24 jam)\n\n* 100 rbx → Rp 13.500\n* 200 rbx → Rp 27.000\n* 300 rbx → Rp 41.000\n* 400 rbx → Rp 55.000\n* 500 rbx → Rp 70.000\n* 600 rbx → Rp 75.000\n* 700 rbx → Rp 95.000\n* 800 rbx → Rp 110.000\n* 900 rbx → Rp 115.000\n* 1000 rbx → Rp 140.000\n\n**nominal lain:**\n140 × jumlah robux yg di inginkan\ncontoh : 140 × 2000 rbx = 280.000\n\n⚠️ note :\n**TIDAK PERLU BUAT KODE GAMEPASS (HANYA PENGIRIMANNYA SAJA YANG SEDIKIT MEMAKAN WAKTU)**"
+            else:
+                pricelist = "# PRICELIST ROBUX VIA SEND USERNAME\n_Buxbeestore.id🐝_\n\n**KELIPATAN 10 RBX (ECERAN) PROSES FAST SATSET:**\n\n10 rbx ➔ Rp 3.000\n20 rbx ➔ Rp 5.500\n30 rbx ➔ Rp 7.500\n40 rbx ➔ Rp 9.500\n50 rbx ➔ Rp 11.000\n\n**KELIPATAN 100 RBX PROSES FAST SATSET:**\n100 rbx ➔ Rp 15.500\n200 rbx ➔ Rp 31.000\n300 rbx ➔ Rp 46.500\n400 rbx ➔ Rp 62.000\n500 rbx ➔ Rp 75.000\n600 rbx ➔ Rp 90.500\n700 rbx ➔ Rp 106.000\n800 rbx ➔ Rp 121.500\n900 rbx ➔ Rp 137.000\n1.000 rbx ➔ Rp 150.000\n\n𓈃 Notes:\n⚠️ sebelum beli pastikan akun penerima robux tidak limit!\n⚠️ wajib sudah verif usia 18+\n⚠️ wajib sudah verifikasi 2 langkah\n⚠️ jangan langsung payment (tunggu ditotalin dulu, baru boleh payment)\n⚠️ setelah payment wajib ss bukti transfer yang jelas agar bisa diproses\n**⚠️ BUKAN ROBLOX KIDS / SELECT**\n\n**⌛️ HARGA JUGA DAPAT BERUBAH-UBAH, TIDAK MENENTU.**"
+
+            embed = discord.Embed(
+                title=f"Ticket - {label}",
+                description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n**📝 DATA PESANAN KAMU:**\n✨ Nickname Roblox: **{self.nickname.value}**\n👤 Username: **{self.username.value}**\n📦 Paket yang dipilih: **{self.paket.value}**\n💳 Metode Pembayaran: **{self.payment.value}**\n\n{pricelist}\n\n**💳 PEMBAYARAN:**\nSilahkan scan QRIS di bawah ini untuk transfer, lalu kirim bukti TF nya disini!",
+                color=0xFFD700
+            )
+            embed.set_image(url=QRIS_URL)
+            embed.set_footer(text=f"{label} | Project by Mipi Store")
+            await channel.send(content=f"{interaction.user.mention}", embed=embed, view=CloseView())
+            await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
+        except Exception as e:
+            print(f"ERROR CREATE TICKET: {e}")
+            await interaction.followup.send(f"Gagal buat ticket, error: {e}. Hubungi admin!", ephemeral=True)
 
 # ===== MODAL VOUCH =====
 class VouchModal(discord.ui.Modal, title="Kasih Vouch ⭐"):
@@ -41,13 +90,13 @@ class VouchModal(discord.ui.Modal, title="Kasih Vouch ⭐"):
         channel = interaction.channel
         buyer_id = None
         try:
-            buyer_id = int(channel.topic) if channel.topic and channel.topic.isdigit() else None
+            parts = channel.topic.split("|") if channel.topic else []
+            buyer_id = int(parts[0]) if parts and parts[0].isdigit() else None
         except:
             buyer_id = None
         buyer = interaction.guild.get_member(buyer_id) if buyer_id else interaction.user
         if buyer is None:
             buyer = interaction.user
-
         try:
             r = int(self.rating.value)
             if r < 1: r = 1
@@ -55,14 +104,12 @@ class VouchModal(discord.ui.Modal, title="Kasih Vouch ⭐"):
         except:
             r = 5
         stars = "⭐" * r
-
         if "gamepass" in channel.name.lower():
             via_text = "VIA GAMEPASS"
             source_text = f"robux-via-gamepass-{ticket_counter}-{buyer.name}"
         else:
             via_text = "VIA USN"
             source_text = f"robux-via-username-{ticket_counter}-{buyer.name}"
-
         try:
             vouch_channel = interaction.guild.get_channel(VOUCH_CHANNEL_ID)
             if vouch_channel is None:
@@ -90,13 +137,13 @@ class VouchModal(discord.ui.Modal, title="Kasih Vouch ⭐"):
         except Exception as e:
             print(f"Vouch error: {e}")
 
-# ===== MODAL PAS CLOSE =====
-class CloseModal(discord.ui.Modal, title="Close Ticket - Isi Data Order"):
+# ===== MODAL PAS CLOSE - OTOMATIS ISI DARI FORM AWAL =====
+class CloseModal(discord.ui.Modal, title="Close Ticket - Konfirmasi Order"):
     nickname = discord.ui.TextInput(label="Nickname Roblox", placeholder="Contoh: SONxMRafii", required=True)
     username = discord.ui.TextInput(label="Username Roblox", placeholder="Contoh: 1mrafii", required=True)
     jumlah = discord.ui.TextInput(label="Jumlah Robux", placeholder="Contoh: 500", required=True)
     total = discord.ui.TextInput(label="Total Harga", placeholder="Contoh: Rp 78.000", required=True)
-    payment = discord.ui.TextInput(label="Payment", placeholder="Contoh: QRIS / DANA / GOPAY", required=True, default="QRIS")
+    payment = discord.ui.TextInput(label="Payment", placeholder="Contoh: QRIS", required=True, default="QRIS")
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("Menyimpan log & menutup ticket dalam 3 detik...", ephemeral=True)
@@ -133,72 +180,42 @@ class CloseModal(discord.ui.Modal, title="Close Ticket - Isi Data Order"):
         except Exception as e:
             print(f"Close error: {e}")
 
-# ===== TOMBOL DI DALAM TICKET: CLOSE + VOUCH =====
+# ===== TOMBOL DI DALAM TICKET =====
 class CloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     @discord.ui.button(label="🔒 Close Ticket", style=discord.ButtonStyle.danger, custom_id="close_ticket")
     async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(CloseModal())
+        # Auto-isi dari data form awal biar admin gak ketik ulang
+        modal = CloseModal()
+        try:
+            parts = interaction.channel.topic.split("|") if interaction.channel.topic else []
+            if len(parts) >= 5:
+                modal.nickname.default = parts[1]
+                modal.username.default = parts[2]
+                modal.jumlah.default = parts[3]
+                modal.payment.default = parts[4]
+        except:
+            pass
+        await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="⭐ Kasih Vouch", style=discord.ButtonStyle.success, custom_id="vouch_ticket")
     async def vouch_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VouchModal())
 
-# ===== TOMBOL PANEL =====
+# ===== TOMBOL PANEL - LANGSUNG BUKA FORM =====
 class TicketView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    async def create_ticket(self, interaction: discord.Interaction, label: str):
-        await interaction.response.defer(ephemeral=True, thinking=True)
-        try:
-            guild = interaction.guild
-            category = guild.get_channel(CATEGORY_ID)
-            if category is None:
-                category = await guild.fetch_channel(CATEGORY_ID)
-            overwrites = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                interaction.user: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True, embed_links=True),
-                guild.me: discord.PermissionOverwrite(read_messages=True, send_messages=True, manage_channels=True)
-            }
-            channel = await guild.create_text_channel(
-                name=f"ticket-{interaction.user.name}-{label.lower().replace(' ', '-')}",
-                category=category,
-                overwrites=overwrites,
-                topic=str(interaction.user.id),
-                reason=f"Ticket {label} by {interaction.user}"
-            )
-            if label == "ROBUX GAMEPASS":
-                embed = discord.Embed(
-                    title="Ticket - ROBUX GAMEPASS",
-                    description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n# PRICELIST ROBUX VIA GAMEPASS 🔥\n\n⏳ Pending 5 Hari\n✅ Sudah After Tax\n⚡ Semi fast proses (max 1x24 jam)\n\n* 100 rbx → Rp 13.500\n* 200 rbx → Rp 27.000\n* 300 rbx → Rp 41.000\n* 400 rbx → Rp 55.000\n* 500 rbx → Rp 70.000\n* 600 rbx → Rp 75.000\n* 700 rbx → Rp 95.000\n* 800 rbx → Rp 110.000\n* 900 rbx → Rp 115.000\n* 1000 rbx → Rp 140.000\n\n**nominal lain:**\n140 × jumlah robux yg di inginkan\ncontoh : 140 × 2000 rbx = 280.000\n\n⚠️ note :\n**TIDAK PERLU BUAT KODE GAMEPASS (HANYA PENGIRIMANNYA SAJA YANG SEDIKIT MEMAKAN WAKTU)**\n\nSilahkan ketik nominal yang mau kamu order ya!\n\n**💳 PEMBAYARAN:**\nSilahkan scan QRIS di bawah ini untuk transfer, lalu kirim bukti TF nya disini!",
-                    color=0xFFD700
-                )
-            elif label == "ROBUX VIA USN":
-                embed = discord.Embed(
-                    title="Ticket - ROBUX VIA USN",
-                    description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n# PRICELIST ROBUX VIA SEND USERNAME\n_Buxbeestore.id🐝_\n\n**KELIPATAN 10 RBX (ECERAN) PROSES FAST SATSET:**\n\n10 rbx ➔ Rp 3.000\n20 rbx ➔ Rp 5.500\n30 rbx ➔ Rp 7.500\n40 rbx ➔ Rp 9.500\n50 rbx ➔ Rp 11.000\n\n**KELIPATAN 100 RBX PROSES FAST SATSET:**\n100 rbx ➔ Rp 15.500\n200 rbx ➔ Rp 31.000\n300 rbx ➔ Rp 46.500\n400 rbx ➔ Rp 62.000\n500 rbx ➔ Rp 75.000\n600 rbx ➔ Rp 90.500\n700 rbx ➔ Rp 106.000\n800 rbx ➔ Rp 121.500\n900 rbx ➔ Rp 137.000\n1.000 rbx ➔ Rp 150.000\n\n𓈃 Notes:\n⚠️ sebelum beli pastikan akun penerima robux tidak limit!\n⚠️ wajib sudah verif usia 18+\n⚠️ wajib sudah verifikasi 2 langkah\n⚠️ jangan langsung payment (tunggu ditotalin dulu, baru boleh payment)\n⚠️ setelah payment wajib ss bukti transfer yang jelas agar bisa diproses\n**⚠️ BUKAN ROBLOX KIDS / SELECT**\n\n**⌛️ HARGA JUGA DAPAT BERUBAH-UBAH, TIDAK MENENTU.**\n\nSilahkan ketik nominal yang mau kamu order ya!\n\n**💳 PEMBAYARAN:**\nSilahkan scan QRIS di bawah ini untuk transfer, lalu kirim bukti TF nya disini!",
-                    color=0xFFD700
-                )
-            else:
-                embed = discord.Embed(title=f"Ticket - {label}", description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.", color=0xFFD700)
-            embed.set_image(url=QRIS_URL)
-            embed.set_footer(text=f"{label} | Project by Mipi Store")
-            await channel.send(content=f"{interaction.user.mention}", embed=embed, view=CloseView())
-            await interaction.followup.send(f"Ticket kamu berhasil dibuat! {channel.mention}", ephemeral=True)
-        except Exception as e:
-            print(f"ERROR CREATE TICKET: {e}")
-            await interaction.followup.send(f"Gagal buat ticket, error: {e}. Hubungi admin!", ephemeral=True)
-
     @discord.ui.button(label="ROBUX GAMEPASS", style=discord.ButtonStyle.primary, custom_id="ticket_gamepass", emoji="🎫")
     async def gamepass_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.create_ticket(interaction, "ROBUX GAMEPASS")
+        await interaction.response.send_modal(OrderModal("ROBUX GAMEPASS"))
 
     @discord.ui.button(label="ROBUX VIA USN", style=discord.ButtonStyle.primary, custom_id="ticket_viausn", emoji="🎫")
     async def viausn_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.create_ticket(interaction, "ROBUX VIA USN")
+        await interaction.response.send_modal(OrderModal("ROBUX VIA USN"))
 
 @bot.event
 async def on_ready():
@@ -216,7 +233,7 @@ async def setup_ticket(interaction: discord.Interaction):
     if interaction.channel_id != TICKET_CHANNEL_ID:
         await interaction.response.send_message("Command ini hanya bisa di #open-ticket!", ephemeral=True)
         return
-    embed = discord.Embed(title="Order Here!", description="Selamat datang di layanan pemesanan Buxbee Store 🐝! Gunakan fitur ini untuk melakukan pemesanan atau bertanya seputar produk kami.\n\n**📋 CARA MEMBUKA TICKET**\n1. Klik tombol di bawah ini.\n2. Channel privat baru akan muncul untuk kamu.", color=0xFFD700)
+    embed = discord.Embed(title="Order Here!", description="Selamat datang di layanan pemesanan Buxbee Store 🐝! Gunakan fitur ini untuk melakukan pemesanan atau bertanya seputar produk kami.\n\n**📋 CARA MEMBUKA TICKET**\n1. Klik tombol di bawah ini.\n2. Isi form Pesanan Robux.\n3. Channel privat baru akan muncul untuk kamu.", color=0xFFD700)
     embed.set_image(url="https://raw.githubusercontent.com/buxbeestoreid-wq/buxbee-ticket/main/IMG_1777.png")
     embed.set_footer(text="Project by Mipi Store")
     await interaction.response.send_message(embed=embed, view=TicketView())
