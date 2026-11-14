@@ -53,11 +53,18 @@ class TicketView(discord.ui.View):
                 reason=f"Ticket {label} by {interaction.user}"
             )
 
-            # --- EMBED GAMEPASS = PRICELIST ---
+            # --- GAMEPASS ---
             if label == "ROBUX GAMEPASS":
                 embed = discord.Embed(
                     title="Ticket - ROBUX GAMEPASS",
                     description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n# PRICELIST ROBUX VIA GAMEPASS 🔥\n\n⏳ Pending 5 Hari\n✅ Sudah After Tax\n⚡ Semi fast proses (max 1x24 jam)\n\n* 100 rbx → Rp 13.500\n* 200 rbx → Rp 27.000\n* 300 rbx → Rp 41.000\n* 400 rbx → Rp 55.000\n* 500 rbx → Rp 70.000\n* 600 rbx → Rp 75.000\n* 700 rbx → Rp 95.000\n* 800 rbx → Rp 110.000\n* 900 rbx → Rp 115.000\n* 1000 rbx → Rp 140.000\n\n**nominal lain:**\n140 × jumlah robux yg di inginkan\ncontoh : 140 × 2000 rbx = 280.000\n\n⚠️ note :\n**TIDAK PERLU BUAT KODE GAMEPASS (HANYA PENGIRIMANNYA SAJA YANG SEDIKIT MEMAKAN WAKTU)**\n\nSilahkan ketik nominal yang mau kamu order ya!",
+                    color=0xFFD700
+                )
+            # --- VIA USN ---
+            elif label == "ROBUX VIA USN":
+                embed = discord.Embed(
+                    title="Ticket - ROBUX VIA USN",
+                    description=f"Halo {interaction.user.mention}! Terima kasih sudah buka ticket.\n\n# PRICELIST ROBUX VIA SEND USERNAME\n_Buxbeestore.id🐝_\n\n**KELIPATAN 10 RBX (ECERAN) PROSES FAST SATSET:**\n\n10 rbx ➔ Rp 3.000\n20 rbx ➔ Rp 5.500\n30 rbx ➔ Rp 7.500\n40 rbx ➔ Rp 9.500\n50 rbx ➔ Rp 11.000\n\n**KELIPATAN 100 RBX PROSES FAST SATSET:**\n100 rbx ➔ Rp 15.500\n200 rbx ➔ Rp 31.000\n300 rbx ➔ Rp 46.500\n400 rbx ➔ Rp 62.000\n500 rbx ➔ Rp 75.000\n600 rbx ➔ Rp 90.500\n700 rbx ➔ Rp 106.000\n800 rbx ➔ Rp 121.500\n900 rbx ➔ Rp 137.000\n1.000 rbx ➔ Rp 150.000\n\n𓈃 Notes:\n⚠️ sebelum beli pastikan akun penerima robux tidak limit!\n⚠️ wajib sudah verif usia 18+\n⚠️ wajib sudah verifikasi 2 langkah\n⚠️ jangan langsung payment (tunggu ditotalin dulu, baru boleh payment)\n⚠️ setelah payment wajib ss bukti transfer yang jelas agar bisa diproses\n**⚠️ BUKAN ROBLOX KIDS / SELECT**\n\n**⌛️ HARGA JUGA DAPAT BERUBAH-UBAH, TIDAK MENENTU.**\n\nSilahkan ketik nominal yang mau kamu order ya!",
                     color=0xFFD700
                 )
             else:
